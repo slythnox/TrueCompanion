@@ -46,7 +46,7 @@ An interactive AI companion chat application powered by Google Gemini AI, featur
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/TrueCompanion.git
+   git clone https://github.com/slythnox/TrueCompanion.git
    cd TrueCompanion-main
    ```
 
@@ -326,17 +326,6 @@ If you encounter any issues or have questions:
 2. Review existing [GitHub Issues](https://github.com/yourusername/TrueCompanion/issues)
 3. Create a new issue with detailed information
 
-## 🔮 Future Enhancements
-
-- [ ] Voice chat capabilities
-- [ ] Image generation for characters
-- [ ] Conversation history with MongoDB
-- [ ] Multi-language support
-- [ ] Advanced personality customization
-- [ ] Group chat with multiple characters
-
 ---
-
-**Made with 💜 by the TrueCompanion Team**
 
 *Your AI companion awaits...*
