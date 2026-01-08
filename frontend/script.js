@@ -50,7 +50,7 @@ const characters = {
 document.addEventListener('DOMContentLoaded', () => {
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
 
-    switch(currentPage) {
+    switch (currentPage) {
         case 'index.html':
         case '':
             initIndexPage();
@@ -427,9 +427,9 @@ function initChatPage() {
 
         // Smooth scroll to bottom
         setTimeout(() => {
-            messagesContainer.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'end' 
+            messagesContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'end'
             });
         }, 100);
 
@@ -445,9 +445,9 @@ function initChatPage() {
         if (typingIndicator) {
             typingIndicator.style.display = 'flex';
             setTimeout(() => {
-                typingIndicator.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'end' 
+                typingIndicator.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'end'
                 });
             }, 100);
         }
@@ -480,21 +480,26 @@ function initChatPage() {
     }, 100);
 }
 
-// Utility functions
-function goBack() {
+// Utility functions - Make globally accessible
+window.goBack = function () {
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
 
-    switch(currentPage) {
+    switch (currentPage) {
         case 'select-character.html':
             window.location.href = 'index.html';
             break;
         case 'chat.html':
             window.location.href = 'select-character.html';
             break;
+        case 'venting.html':
+        case 'create-character.html':
+        case 'info.html':
+            window.location.href = 'index.html';
+            break;
         default:
-            window.history.back();
+            window.location.href = 'index.html';
     }
-}
+};
 
 // Enhanced background effects
 function initBackgroundEffects() {
@@ -550,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add ripple effect to buttons
     const buttons = document.querySelectorAll('button');
     buttons.forEach(button => {
-        button.addEventListener('click', function(e) {
+        button.addEventListener('click', function (e) {
             const ripple = document.createElement('span');
             const rect = this.getBoundingClientRect();
             const size = Math.max(rect.width, rect.height);
@@ -735,11 +740,11 @@ function initCreateCharacterPage() {
 
     // Form validation
     function validateForm() {
-        const isValid = nameInput.value.trim() && 
-                       avatarInput.value.trim() && 
-                       genderSelect.value && 
-                       descriptionInput.value.trim() && 
-                       personalityInput.value.trim();
+        const isValid = nameInput.value.trim() &&
+            avatarInput.value.trim() &&
+            genderSelect.value &&
+            descriptionInput.value.trim() &&
+            personalityInput.value.trim();
 
         createBtn.disabled = !isValid;
     }

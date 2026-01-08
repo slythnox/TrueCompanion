@@ -2,6 +2,9 @@ import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import validator from 'validator';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { MongoClient } from 'mongodb';
@@ -318,10 +321,40 @@ async function generateWithRetry(prompt, retries = 0, lastUsedInstance = null) {
 
 // Middleware
 app.set('trust proxy', 1); // Trust first proxy for rate limiting
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+}));
+
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10kb' })); // Limit request body size
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(express.static(path.join(__dirname, 'frontend')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
+
+// Input sanitization middleware
+const sanitizeInput = (req, res, next) => {
+  if (req.body) {
+    Object.keys(req.body).forEach(key => {
+      if (typeof req.body[key] === 'string') {
+        // Trim whitespace
+        req.body[key] = req.body[key].trim();
+        // Escape HTML to prevent XSS
+        req.body[key] = validator.escape(req.body[key]);
+      }
+    });
+  }
+  next();
+};
 
 // Routes
 app.get('/', (req, res) => {
@@ -358,20 +391,33 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.post('/generate', async (req, res) => {
+app.post('/generate', sanitizeInput, async (req, res) => {
   try {
     const { prompt, character } = req.body;
     const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
 
     console.log(`📝 New request from ${clientIP} for character: ${character}`);
 
+    // Input validation
     if (!prompt || !character) {
       console.log('❌ Missing prompt or character');
       return res.status(400).json({ error: 'Prompt and character are required' });
     }
 
+    if (typeof prompt !== 'string' || typeof character !== 'string') {
+      return res.status(400).json({ error: 'Invalid input types' });
+    }
+
     if (prompt.trim().length === 0) {
       return res.status(400).json({ error: 'Please enter a message' });
+    }
+
+    if (prompt.length > 1000) {
+      return res.status(400).json({ error: 'Message too long. Please keep it under 1000 characters.' });
+    }
+
+    if (character.length > 100) {
+      return res.status(400).json({ error: 'Invalid character name' });
     }
 
     // Check rate limit
@@ -463,12 +509,23 @@ app.post('/generate', async (req, res) => {
 });
 
 // Custom character creation endpoint
-app.post('/create-character', async (req, res) => {
+app.post('/create-character', sanitizeInput, async (req, res) => {
   try {
     const { name, description, personality, avatar, gender } = req.body;
     
+    // Input validation
     if (!name || !description || !personality || !avatar || !gender) {
       return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    // Validate input lengths
+    if (name.length > 50 || description.length > 200 || personality.length > 500) {
+      return res.status(400).json({ error: 'Input exceeds maximum length' });
+    }
+
+    // Validate gender
+    if (!['girlfriend', 'boyfriend'].includes(gender)) {
+      return res.status(400).json({ error: 'Invalid gender value' });
     }
 
     const characterId = Date.now().toString();
@@ -526,13 +583,22 @@ app.post('/set-mood', async (req, res) => {
   }
 });
 
-app.post('/generate-vent', async (req, res) => {
+app.post('/generate-vent', sanitizeInput, async (req, res) => {
   try {
     const { ventText, character } = req.body;
     const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
 
+    // Input validation
     if (!ventText || !character) {
       return res.status(400).json({ error: 'Vent text and character are required' });
+    }
+
+    if (typeof ventText !== 'string' || typeof character !== 'string') {
+      return res.status(400).json({ error: 'Invalid input types' });
+    }
+
+    if (ventText.length > 2000) {
+      return res.status(400).json({ error: 'Vent text too long. Please keep it under 2000 characters.' });
     }
 
     // Check rate limit
